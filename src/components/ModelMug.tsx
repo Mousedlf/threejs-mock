@@ -1,7 +1,8 @@
-import React, {useCallback, useEffect, useRef} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import * as THREE from 'three';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import Mug from "../assets/model1.glb";
+import Duck from "../assets/duck.glb";
 import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 
 export default function ModelMug() {
@@ -19,6 +20,8 @@ export default function ModelMug() {
     const meshRef = useRef<THREE.Mesh>(null);
     const decalGeometryRef = useRef<THREE.BufferGeometry>(null);
     const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+
+    const [currentModel, setCurrentModel] = useState(Mug);
 
     // Initialize Three.js scene
     const initScene = useCallback(()=>{
@@ -38,7 +41,7 @@ export default function ModelMug() {
         scene.add(camera)
 
         // Add lighting
-        const hemispheric = new THREE.HemisphereLight(0xffffff, 0x222222, 1)
+        const hemispheric = new THREE.HemisphereLight(0xffffff, 0x222222, 3)
         scene.add(hemispheric)
 
         // Setup renderer
@@ -67,7 +70,7 @@ export default function ModelMug() {
     }, [])
 
     // Load the 3D model
-    const loadModel = useCallback(() => {
+    const loadModel = useCallback((urlModel: string) => {
         if (!sceneRef.current || !cameraRef.current || !orbitControlsRef.current) return
 
         const scene = sceneRef.current
@@ -78,7 +81,7 @@ export default function ModelMug() {
         const cameraPos = new THREE.Vector3(-0.2, 0.4, 1.4)
 
         loader.load(
-            Mug,
+            urlModel,
             (gltf) => {
                 const object = gltf.scene
 
@@ -105,7 +108,7 @@ export default function ModelMug() {
                 orbitControls.rotateSpeed = 1.25
                 orbitControls.panSpeed = 1.25
                 orbitControls.screenSpacePanning = true
-                orbitControls.autoRotate = true
+                orbitControls.autoRotate = false
                 orbitControls.autoRotateSpeed = 0.75
 
                 // Position camera and model
@@ -123,19 +126,20 @@ export default function ModelMug() {
 
                 // Process the model meshes
                 object.traverse((obj) => {
-                    if (obj instanceof THREE.Mesh && obj.name === "Mug_Porcelain_PBR001_0") {
+                    if (obj instanceof THREE.Mesh && obj.name) {
 
                         const mat = obj.material as THREE.MeshStandardMaterial;
                         console.log("Matériau du mug :", mat);
 
                         materialRef.current = obj.material
+                        console.log( materialRef.current )
                         meshRef.current = obj
 
-                        setupTextureSelector()
-                    } else if (obj instanceof THREE.Mesh && obj.name === "Mug_Porcelain_PBR002_0") {
-                        const material = obj.material
+                        mat.map = null; ///cache image
+                        mat.needsUpdate = true;
 
-                        setupColorSelector(material)
+                        setupTextureSelector()
+                        setupColorSelector(mat)
                     }
                 })
                 scene.add(object)
@@ -151,9 +155,12 @@ export default function ModelMug() {
     const setupTextureSelector = useCallback(() => {
         if (!imageSelectorRef.current || !materialRef.current) return
 
-        const handleTextureChange = (event: Event) => {
-            if (materialRef.current) {
-                materialRef.current.map = convertImageToTexture(URL.createObjectURL(event.target.files[0]))
+        const handleTextureChange = (event) => {
+            const file = event.target.files[0]
+            if (file && materialRef.current) {
+                const texture = convertImageToTexture(URL.createObjectURL(file))
+                materialRef.current.map = texture
+                materialRef.current.needsUpdate = true
             }
         }
         imageSelectorRef.current.addEventListener("input", handleTextureChange)
@@ -168,9 +175,14 @@ export default function ModelMug() {
 
     // Handle color selection
     const setupColorSelector = useCallback((material) => {
+
+        console.log("ehee")
+
         if (!colorSelectorRef.current) return
 
-        const handleColorChange = (event: Event) => {
+        const handleColorChange = (event) => {
+            console.log("colorselectorref", colorSelectorRef.current)
+            console.log("material", material)
             material.color.set(event.target.value)
         }
 
@@ -211,10 +223,11 @@ export default function ModelMug() {
         return animationId
     }, [])
 
+
     // Initialize everything
     useEffect(() => {
         initScene()
-        loadModel()
+        loadModel(currentModel)
 
         const animationId = animate()
 
@@ -236,25 +249,73 @@ export default function ModelMug() {
                 decalGeometryRef.current.dispose()
             }
         }
-    }, [initScene, loadModel, animate])
+    }, [initScene, loadModel, animate, currentModel])
+
+    const handleModelUpload = useCallback(()=> {
+
+        return console.log("alakz,dnnfv")
+    }, [])
+    const removeImage = useCallback(() => {
+        if (materialRef.current) {
+            materialRef.current.map = null;
+            materialRef.current.needsUpdate = true;
+        }
+
+        if (imageSelectorRef.current) {
+            imageSelectorRef.current.value = ''; // reset file input
+        }
+    }, []);
+
+    const removeColor = useCallback(() => {
+        if (!meshRef.current) return;
+
+        const parent = meshRef.current.parent;
+        if (!parent) return;
+
+        parent.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                const material = child.material as THREE.MeshStandardMaterial;
+                if (material) {
+                    material.color.set('#ffffff'); // couleur de reset
+                    material.needsUpdate = true;
+                }
+            }
+        });
+
+        if (colorSelectorRef.current) {
+            colorSelectorRef.current.value = '#ffffff';
+        }
+
+    }, []);
 
     return (
         <div className="container">
             <div className="preview">
                 <div className="controls">
-
+                    <div className="control-option">
+                    <p>Choose model</p>
+                    <button onClick={() => setCurrentModel(currentModel === Mug ? Duck : Mug)}>
+                        Switch to {currentModel === Mug ? "Duck" : "Mug"}
+                    </button>
+                </div>
                     <div className="control-option">
                         <p>1.</p>
                         <input type="file" accept="image/*" id="imageSelector" name="imageSelector"
                                ref={imageSelectorRef}/>
+                        <button onClick={removeImage}>Remove image</button>
                     </div>
                     <div className="control-option">
-                        <p>2. Pick your color</p>
+                        <p>2. Pick a filter</p>
                         <input type="color" id="colorPicker" name="colorPicker" defaultValue="#ffffff"
                                ref={colorSelectorRef}/>
+                        <button onClick={removeColor}>Remove color</button>
+                    </div>
+                    <div className="control-option">
+                        {/*<p>Change model</p>*/}
+                        {/*<input type="file" accept=".glb" onChange={handleModelUpload}/>*/}
                     </div>
                 </div>
-                <div ref={containerRef}/>
+                <div className="model-3d" ref={containerRef}/>
             </div>
         </div>
     );

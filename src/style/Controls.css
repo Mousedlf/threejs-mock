@@ -4,7 +4,10 @@
 }
 
 .control-option{
-    width: 30%;
     overflow: hidden;
     padding: 0 20px;
+}
+
+.model-3d > canvas {
+    margin: 0 auto;
 }

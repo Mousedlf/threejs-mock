@@ -6,7 +6,7 @@ export default function Dashboard() {
     return (
         <>
         <div className="dashboard">
-            <UserDetails />
+            {/*<UserDetails />*/}
             <ModelMug />
         </div>
         </>
