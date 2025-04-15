@@ -1,0 +1,10 @@
+.controls, .control-option{
+    display: flex;
+    align-items: center;
+}
+
+.control-option{
+    width: 30%;
+    overflow: hidden;
+    padding: 0 20px;
+}

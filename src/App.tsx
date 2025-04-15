@@ -1,11 +1,12 @@
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
-import SignInPage from "./components/SignInPage.tsx";
-import Header from "./components/Header.tsx";
-import Dashboard from "./components/Dashboard.tsx";
+import SignInPage from "./components/SignInPage";
+import Header from "./components/Header";
+import Dashboard from "./components/Dashboard";
+import React from "react";
 
 export default function App() {
     return (
-        <header>
+        <>
             <SignedOut>
                 <SignInPage />
             </SignedOut>
@@ -13,6 +14,6 @@ export default function App() {
                 <Header/>
                 <Dashboard />
             </SignedIn>
-        </header>
+        </>
     );
 }

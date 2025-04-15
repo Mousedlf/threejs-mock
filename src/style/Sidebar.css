@@ -1,0 +1,8 @@
+.sidebar-infos{
+    background-color: darkslategray;
+    padding: 30px;
+    margin: 10px;
+    border-radius: 20px;
+    border: 1px solid rgb(60, 60, 60);
+    height: 75vh;
+}
